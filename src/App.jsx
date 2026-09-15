@@ -1,119 +1,72 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { WagmiProvider, createConfig, http } from 'wagmi';
+import { mainnet, arbitrum, optimism, polygon, bsc, avalanche } from 'wagmi/chains';
+import { injected, walletConnect } from 'wagmi/connectors';
+
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import About from './pages/About';
-import Faq from './pages/Faq';
+import FAQ from './pages/FAQ';
 import Burn from './pages/Burn';
+
+const projectId = '981d7ff2b198243ccba4376e145e52ae';
+
+const wagmiConfig = createConfig({
+  chains: [mainnet, arbitrum, optimism, polygon, bsc, avalanche],
+  connectors: [
+    injected(),
+    walletConnect({ projectId }),
+  ],
+  transports: {
+    [mainnet.id]: http(),
+    [arbitrum.id]: http(),
+    [optimism.id]: http(),
+    [polygon.id]: http(),
+    [bsc.id]: http(),
+    [avalanche.id]: http(),
+  },
+});
 
 const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div style={styles.pageWrapper}>
-          
-          {/* Header Navigation */}
-          <header style={styles.header}>
-            <Link to="/" style={styles.logoContainer}>
-              <span style={styles.logoIcon}>⚡</span>
-              <span style={styles.logoText}>NexusSwap</span>
-            </Link>
-            <nav style={styles.navLinks}>
-              <Link to="/" style={styles.navLink}>Swap</Link>
-              <Link to="/burn" style={styles.burnNavLink}>🔥 Burn</Link>
-              <Link to="/about" style={styles.navLink}>About</Link>
-              <Link to="/faq" style={styles.navLink}>FAQ</Link>
-            </nav>
-          </header>
-
-          {/* Page Routes */}
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/burn" element={<Burn />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/faq" element={<Faq />} />
-          </Routes>
-
-          {/* Footer */}
-          <footer style={styles.footer}>
-            <p>© {new Date().getFullYear()} NexusSwap. All rights reserved.</p>
-          </footer>
-
-        </div>
-      </Router>
-    </QueryClientProvider>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <div style={styles.appContainer}>
+            <Navbar />
+            <div style={styles.content}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/burn" element={<Burn />} />
+              </Routes>
+            </div>
+            <Footer />
+          </div>
+        </Router>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 
 const styles = {
-  pageWrapper: {
-    backgroundColor: '#0a0b0e',
-    color: '#ffffff',
-    minHeight: '100vh',
-    width: '100vw',
-    margin: 0,
-    padding: 0,
-    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  appContainer: {
     display: 'flex',
     flexDirection: 'column',
-    direction: 'ltr',
-    overflowX: 'hidden',
+    minHeight: '100vh',
+    backgroundColor: '#0a0b0e',
+    color: '#ffffff',
+    fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
   },
-  header: {
+  content: {
+    flex: 1,
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '20px 5%',
-    borderBottom: '1px solid #1a1c23',
-    backdropFilter: 'blur(10px)',
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    textDecoration: 'none',
-  },
-  logoIcon: {
-    fontSize: '24px',
-  },
-  logoText: {
-    fontSize: '22px',
-    fontWeight: 'bold',
-    background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  },
-  navLinks: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '20px',
-  },
-  navLink: {
-    color: '#9ca3af',
-    textDecoration: 'none',
-    fontSize: '15px',
-    transition: 'color 0.2s',
-  },
-  burnNavLink: {
-    color: '#f87171',
-    fontWeight: '600',
-    textDecoration: 'none',
-    fontSize: '15px',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    padding: '6px 12px',
-    borderRadius: '8px',
-    border: '1px solid rgba(239, 68, 68, 0.2)',
-  },
-  footer: {
-    textAlign: 'center',
-    padding: '20px',
-    borderTop: '1px solid #1a1c23',
-    color: '#6b7280',
-    fontSize: '14px',
-    width: '100%',
-    boxSizing: 'border-box',
+    flexDirection: 'column',
   },
 };

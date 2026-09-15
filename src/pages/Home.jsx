@@ -1,8 +1,8 @@
+import React from 'react';
 import { LiFiWidget } from '@lifi/widget';
 
-const ROBINHOOD_CHAIN_ID = 4663;
-
 const widgetConfig = {
+  integrator: 'raouf',
   appearance: 'dark',
   theme: {
     palette: {
@@ -12,23 +12,14 @@ const widgetConfig = {
     container: {
       border: '1px solid #2e303e',
       borderRadius: '20px',
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
     },
   },
-
-  // 1. تحديد عملة الإرسال (ETH)
-  fromChain: ROBINHOOD_CHAIN_ID,
-  fromToken: '0x0000000000000000000000000000000000000000',
-
-  // 2. تحديد عملة الاستلام (USDC)
-  toChain: ROBINHOOD_CHAIN_ID,
-  toToken: '0x5fc5360d0400a0fd4f2af552add042d716f1d168',
 };
 
 export default function Home() {
   return (
     <main style={styles.main}>
-      {/* Hero Section */}
       <div style={styles.heroSection}>
         <h1 style={styles.title}>
           Cross-Chain Swaps <br />
@@ -39,15 +30,10 @@ export default function Home() {
         </p>
       </div>
 
-      {/* LI.FI Widget Section */}
       <div id="swap" style={styles.widgetWrapper}>
-        <LiFiWidget 
-          integrator="raouf" 
-          config={widgetConfig} 
-        />
+        <LiFiWidget config={widgetConfig} />
       </div>
 
-      {/* Features Section */}
       <section id="features" style={styles.featuresSection}>
         <div style={styles.featureCard}>
           <div style={styles.featureIcon}>🔒</div>
