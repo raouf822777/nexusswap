@@ -36,7 +36,7 @@ function Navbar() {
       </div>
       <div style={styles.navLinks}>
         <Link to="/" style={styles.link}>Swap</Link>
-        <a href="#features" style={styles.link}>Features</a>
+        <Link to="/burn" style={styles.link}>Burn</Link>
       </div>
     </nav>
   );
@@ -50,6 +50,18 @@ function Footer() {
   );
 }
 
+function BurnPage() {
+  return (
+    <div style={styles.burnContainer}>
+      <h2>Token Burn Portal</h2>
+      <p style={styles.burnSubText}>Burn your tokens safely across supported chains.</p>
+      <div style={styles.burnCard}>
+        <p>Token Burn interface is under scheduled maintenance or ready for action.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
@@ -59,7 +71,8 @@ export default function App() {
             <Navbar />
             <div style={styles.content}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/*" element={<Home />} />
+                <Route path="/burn" element={<BurnPage />} />
               </Routes>
             </div>
             <Footer />
@@ -116,6 +129,26 @@ const styles = {
     textDecoration: 'none',
     fontWeight: '500',
     fontSize: '15px',
+  },
+  burnContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '60px 20px',
+    textAlign: 'center',
+  },
+  burnSubText: {
+    color: '#9ca3af',
+    marginBottom: '30px',
+  },
+  burnCard: {
+    backgroundColor: '#12131a',
+    border: '1px solid #1e2029',
+    borderRadius: '16px',
+    padding: '40px',
+    maxWidth: '500px',
+    width: '100%',
   },
   footer: {
     textAlign: 'center',
