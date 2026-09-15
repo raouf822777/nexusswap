@@ -5,12 +5,7 @@ import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet, arbitrum, optimism, polygon, bsc, avalanche } from 'wagmi/chains';
 import { injected, walletConnect } from 'wagmi/connectors';
 
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
 import Home from './pages/Home';
-import About from './pages/About';
-import FAQ from './pages/FAQ';
-import Burn from './pages/Burn';
 
 const projectId = '981d7ff2b198243ccba4376e145e52ae';
 
@@ -38,16 +33,9 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <Router>
           <div style={styles.appContainer}>
-            <Navbar />
-            <div style={styles.content}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/burn" element={<Burn />} />
-              </Routes>
-            </div>
-            <Footer />
+            <Routes>
+              <Route path="/" element={<Home />} />
+            </Routes>
           </div>
         </Router>
       </QueryClientProvider>
@@ -63,10 +51,5 @@ const styles = {
     backgroundColor: '#0a0b0e',
     color: '#ffffff',
     fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
   },
 };
