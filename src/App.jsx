@@ -6,6 +6,9 @@ import { mainnet, arbitrum, optimism, polygon, bsc, avalanche } from 'wagmi/chai
 import { injected, walletConnect } from 'wagmi/connectors';
 
 import Home from './pages/Home';
+import About from './pages/About';
+import FAQ from './pages/FAQ';
+import Burn from './pages/Burn';
 
 const projectId = '981d7ff2b198243ccba4376e145e52ae';
 
@@ -30,13 +33,15 @@ const queryClient = new QueryClient();
 function Navbar() {
   return (
     <nav style={styles.nav}>
-      <div style={styles.logoContainer}>
+      <Link to="/" style={styles.logoContainer}>
         <span style={styles.logoIcon}>⚡</span>
         <span style={styles.logoText}>NexusSwap</span>
-      </div>
+      </Link>
       <div style={styles.navLinks}>
         <Link to="/" style={styles.link}>Swap</Link>
-        <Link to="/burn" style={styles.link}>Burn</Link>
+        <Link to="/about" style={styles.link}>About</Link>
+        <Link to="/faq" style={styles.link}>FAQ</Link>
+        <Link to="/burn" style={styles.link}>Burn 🔥</Link>
       </div>
     </nav>
   );
@@ -50,18 +55,6 @@ function Footer() {
   );
 }
 
-function BurnPage() {
-  return (
-    <div style={styles.burnContainer}>
-      <h2>Token Burn Portal</h2>
-      <p style={styles.burnSubText}>Burn your tokens safely across supported chains.</p>
-      <div style={styles.burnCard}>
-        <p>Token Burn interface is under scheduled maintenance or ready for action.</p>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
@@ -72,7 +65,9 @@ export default function App() {
             <div style={styles.content}>
               <Routes>
                 <Route path="/*" element={<Home />} />
-                <Route path="/burn" element={<BurnPage />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/burn" element={<Burn />} />
               </Routes>
             </div>
             <Footer />
@@ -92,11 +87,7 @@ const styles = {
     color: '#ffffff',
     fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
   },
-  content: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-  },
+  content: { flex: 1, display: 'flex', flexDirection: 'column' },
   nav: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -105,14 +96,8 @@ const styles = {
     backgroundColor: '#12131a',
     borderBottom: '1px solid #1e2029',
   },
-  logoContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  logoIcon: {
-    fontSize: '24px',
-  },
+  logoContainer: { display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' },
+  logoIcon: { fontSize: '24px' },
   logoText: {
     fontSize: '20px',
     fontWeight: '800',
@@ -120,45 +105,8 @@ const styles = {
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
-  navLinks: {
-    display: 'flex',
-    gap: '20px',
-  },
-  link: {
-    color: '#9ca3af',
-    textDecoration: 'none',
-    fontWeight: '500',
-    fontSize: '15px',
-  },
-  burnContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '60px 20px',
-    textAlign: 'center',
-  },
-  burnSubText: {
-    color: '#9ca3af',
-    marginBottom: '30px',
-  },
-  burnCard: {
-    backgroundColor: '#12131a',
-    border: '1px solid #1e2029',
-    borderRadius: '16px',
-    padding: '40px',
-    maxWidth: '500px',
-    width: '100%',
-  },
-  footer: {
-    textAlign: 'center',
-    padding: '20px',
-    backgroundColor: '#0a0b0e',
-    borderTop: '1px solid #1e2029',
-  },
-  footerText: {
-    color: '#6b7280',
-    fontSize: '14px',
-    margin: 0,
-  },
+  navLinks: { display: 'flex', gap: '20px', alignItems: 'center' },
+  link: { color: '#9ca3af', textDecoration: 'none', fontWeight: '500', fontSize: '15px' },
+  footer: { textAlign: 'center', padding: '20px', backgroundColor: '#0a0b0e', borderTop: '1px solid #1e2029' },
+  footerText: { color: '#6b7280', fontSize: '14px', margin: 0 },
 };
