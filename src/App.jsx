@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet, arbitrum, optimism, polygon, bsc, avalanche } from 'wagmi/chains';
@@ -27,15 +27,42 @@ const wagmiConfig = createConfig({
 
 const queryClient = new QueryClient();
 
+function Navbar() {
+  return (
+    <nav style={styles.nav}>
+      <div style={styles.logoContainer}>
+        <span style={styles.logoIcon}>⚡</span>
+        <span style={styles.logoText}>NexusSwap</span>
+      </div>
+      <div style={styles.navLinks}>
+        <Link to="/" style={styles.link}>Swap</Link>
+        <a href="#features" style={styles.link}>Features</a>
+      </div>
+    </nav>
+  );
+}
+
+function Footer() {
+  return (
+    <footer style={styles.footer}>
+      <p style={styles.footerText}>© 2026 NexusSwap. All rights reserved.</p>
+    </footer>
+  );
+}
+
 export default function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <Router>
           <div style={styles.appContainer}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-            </Routes>
+            <Navbar />
+            <div style={styles.content}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+              </Routes>
+            </div>
+            <Footer />
           </div>
         </Router>
       </QueryClientProvider>
@@ -51,5 +78,54 @@ const styles = {
     backgroundColor: '#0a0b0e',
     color: '#ffffff',
     fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+  },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  nav: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px 40px',
+    backgroundColor: '#12131a',
+    borderBottom: '1px solid #1e2029',
+  },
+  logoContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  logoIcon: {
+    fontSize: '24px',
+  },
+  logoText: {
+    fontSize: '20px',
+    fontWeight: '800',
+    background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  navLinks: {
+    display: 'flex',
+    gap: '20px',
+  },
+  link: {
+    color: '#9ca3af',
+    textDecoration: 'none',
+    fontWeight: '500',
+    fontSize: '15px',
+  },
+  footer: {
+    textAlign: 'center',
+    padding: '20px',
+    backgroundColor: '#0a0b0e',
+    borderTop: '1px solid #1e2029',
+  },
+  footerText: {
+    color: '#6b7280',
+    fontSize: '14px',
+    margin: 0,
   },
 };
