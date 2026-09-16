@@ -85,12 +85,11 @@ export default function UniswapWidget() {
     calculateQuote();
   }, [amountIn, tokenIn, tokenOut]);
 
-  // دالة تغيير الشبكة وتحديث العملات تلقائياً مثل Uniswap
   const handleNetworkChange = (net) => {
     setSelectedNetwork(net);
     const netTokens = TOKENS_BY_NETWORK[net.id] || TOKENS_BY_NETWORK[1];
-    setTokenIn(netTokens[0]); // العملة الرئيسية للشبكة (مثلاً ETH أو POL)
-    setTokenOut(netTokens[1] || netTokens[0]); // العملة الثانية المتاحة (مثلاً USDC)
+    setTokenIn(netTokens[0]);
+    setTokenOut(netTokens[1] || netTokens[0]);
   };
 
   const handleSelectToken = (token) => {
@@ -104,12 +103,25 @@ export default function UniswapWidget() {
   };
 
   const currentTokens = TOKENS_BY_NETWORK[selectedNetwork.id] || TOKENS_BY_NETWORK[1];
+  
+  // تنظيف نص البحث وإزالة أي رموز غير طابعة قد تأتي من لوحة المفاتيح
+  const cleanedQuery = searchQuery.trim().toLowerCase();
+
   const filteredTokens = currentTokens.filter(t => {
-    const q = searchQuery.toLowerCase();
-    return t.symbol.toLowerCase().includes(q) || 
-           t.name.toLowerCase().includes(q) || 
-           t.address.toLowerCase().includes(q);
+    return t.symbol.toLowerCase().includes(cleanedQuery) || 
+           t.name.toLowerCase().includes(cleanedQuery) || 
+           t.address.toLowerCase().includes(cleanedQuery);
   });
+
+  // التحقق مما إذا كان النص المكتوب عنوان عقد صالح (يبدأ بـ 0x وطوله 42 حرفاً)
+  const isEthAddress = cleanedQuery.startsWith('0x') && cleanedQuery.length === 42;
+  const customToken = isEthAddress ? {
+    symbol: 'CUSTOM',
+    name: 'Custom Imported Token',
+    address: searchQuery.trim(),
+    decimals: 18,
+    price: 1
+  } : null;
 
   return (
     <div style={styles.card}>
@@ -209,9 +221,17 @@ export default function UniswapWidget() {
                     <div style={{ fontSize: '11px', color: '#6366f1' }}>{t.address.substring(0, 6)}...</div>
                   </div>
                 ))
+              ) : customToken ? (
+                <div onClick={() => handleSelectToken(customToken)} style={{ ...styles.tokenItem, backgroundColor: '#1e293b', border: '1px solid #6366f1' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#a78bfa' }}>Import Custom Token</div>
+                    <div style={{ fontSize: '11px', color: '#8F96A0' }}>{customToken.address.substring(0, 10)}...</div>
+                  </div>
+                  <button style={styles.importBtn}>Import</button>
+                </div>
               ) : (
                 <div style={{ textAlign: 'center', color: '#8F96A0', padding: '20px' }}>
-                  No token found. (Custom address support ready)
+                  No token found. Paste a valid 0x contract address.
                 </div>
               )}
             </div>
@@ -243,5 +263,6 @@ const styles = {
   netTab: { border: '1px solid', borderRadius: '10px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#fff' },
   searchBox: { width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid #232d3f', backgroundColor: '#19212D', color: '#fff', fontSize: '14px', outline: 'none' },
   tokenList: { maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' },
-  tokenItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '10px', cursor: 'pointer', backgroundColor: '#19212D' }
+  tokenItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '10px', cursor: 'pointer', backgroundColor: '#19212D' },
+  importBtn: { backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }
 };
