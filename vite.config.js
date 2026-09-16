@@ -13,12 +13,18 @@ export default defineConfig({
       },
     }),
   ],
+  define: {
+    'process.env': {},
+  },
   build: {
-    target: 'es2020',
+    target: 'esnext',
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
   },
   optimizeDeps: {
     esbuildOptions: {
-      target: 'es2020',
+      target: 'esnext',
       supported: { bigint: true },
     },
   },
