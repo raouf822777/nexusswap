@@ -2,10 +2,11 @@ import React from 'react';
 import { LiFiWidget } from '@lifi/widget';
 
 const widgetConfig = {
-  integrator: 'nexus-swap-app',
+  integrator: 'NexusSwap',
   variant: 'expandable',
   subvariant: 'default',
   appearance: 'dark',
+  buildUrl: true,
   theme: {
     palette: {
       primary: { main: '#8b5cf6' },
@@ -39,7 +40,7 @@ export default function Home() {
       </div>
 
       <div style={styles.widgetWrapper}>
-        <LiFiWidget config={widgetConfig} integrator="nexus-swap-app" />
+        <LiFiWidget config={widgetConfig} integrator="NexusSwap" />
       </div>
 
       <div style={styles.features}>
