@@ -8,9 +8,9 @@ const NETWORKS = {
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://eth.llamarpc.com'],
     tokens: [
-      { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', popular: true, coingeckoId: 'ethereum', decimals: 18 },
-      { symbol: 'USDT', name: 'Tether USD', address: '0xdac17f958d2ee523a2206206994597c13d831ec7', popular: true, coingeckoId: 'tether', decimals: 6 },
-      { symbol: 'USDC', name: 'USD Coin', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', popular: true, coingeckoId: 'usd-coin', decimals: 6 }
+      { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
+      { symbol: 'USDT', name: 'Tether USD', address: '0xdac17f958d2ee523a2206206994597c13d831ec7', decimals: 6 },
+      { symbol: 'USDC', name: 'USD Coin', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', decimals: 6 }
     ]
   },
   bsc: {
@@ -19,9 +19,9 @@ const NETWORKS = {
     nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
     rpcUrls: ['https://bsc-dataseed.binance.org/'],
     tokens: [
-      { symbol: 'BNB', name: 'BNB Token', address: '0x0000000000000000000000000000000000000000', popular: true, coingeckoId: 'binancecoin', decimals: 18 },
-      { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059ff775485246999027b3197955', popular: true, coingeckoId: 'tether', decimals: 18 },
-      { symbol: 'CAKE', name: 'PancakeSwap', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', popular: true, coingeckoId: 'pancakeswap-token', decimals: 18 }
+      { symbol: 'BNB', name: 'BNB Token', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
+      { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059ff775485246999027b3197955', decimals: 18 },
+      { symbol: 'CAKE', name: 'PancakeSwap', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', decimals: 18 }
     ]
   },
   robinhood: {
@@ -30,9 +30,8 @@ const NETWORKS = {
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
     tokens: [
-      { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', popular: true, coingeckoId: 'ethereum', decimals: 18 },
-      { symbol: 'USDC', name: 'USD Coin', address: '0x123700000000000000000000000000000000usdc', popular: true, coingeckoId: 'usd-coin', decimals: 6 },
-      { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x123700000000000000000000000000000000wbtc', popular: false, coingeckoId: 'wrapped-bitcoin', decimals: 8 }
+      { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
+      { symbol: 'USDC', name: 'USD Coin', address: '0x123700000000000000000000000000000000usdc', decimals: 6 }
     ]
   }
 };
@@ -50,17 +49,52 @@ export default function Home() {
   const [amount, setAmount] = useState('');
   const [estimatedReceive, setEstimatedReceive] = useState('');
   const [balances, setBalances] = useState({});
+  const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
     checkConnection();
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on('chainChanged', () => window.location.reload());
+    }
+    return () => {
+      if (window.ethereum && window.ethereum.removeListener) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
   }, []);
 
   useEffect(() => {
-    if (account) fetchRealBalances();
+    if (account) {
+      fetchRealBalances();
+    }
   }, [account, selectedNetwork]);
+
+  const handleAccountsChanged = (accounts) => {
+    if (accounts.length > 0) {
+      setAccount(accounts[0]);
+    } else {
+      setAccount('');
+      setBalances({});
+    }
+  };
+
+  const checkConnection = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+        }
+      } catch (err) {
+        console.error('Connection check failed:', err);
+      }
+    }
+  };
 
   const fetchRealBalances = async () => {
     if (!window.ethereum || !account) return;
+    setIsFetching(true);
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -69,8 +103,12 @@ export default function Home() {
 
       for (const token of tokens) {
         if (token.address === '0x0000000000000000000000000000000000000000') {
-          const rawBalance = await provider.getBalance(account);
-          realBalances[token.symbol] = parseFloat(ethers.formatEther(rawBalance)).toFixed(4);
+          try {
+            const rawBalance = await provider.getBalance(account);
+            realBalances[token.symbol] = parseFloat(ethers.formatEther(rawBalance)).toFixed(4);
+          } catch (e) {
+            realBalances[token.symbol] = '0.0000';
+          }
         } else {
           try {
             const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
@@ -85,26 +123,36 @@ export default function Home() {
 
       setBalances(realBalances);
     } catch (err) {
-      console.error('Error reading blockchain balances:', err);
+      console.error('Error fetching balances:', err);
+    } finally {
+      setIsFetching(false);
     }
   };
 
-  const checkConnection = async () => {
+  const connectWallet = async () => {
     if (window.ethereum) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) setAccount(accounts[0]);
+        const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accs.length) setAccount(accs[0]);
       } catch (err) {
-        console.error(err);
+        console.error('Wallet connection rejected:', err);
       }
+    } else {
+      alert('الرجاء تثبيت محفظة MetaMask لتكمن من الاتصال.');
     }
+  };
+
+  const renderBalance = (symbol) => {
+    if (!account) return null;
+    if (isFetching && !balances[symbol]) return 'جاري التحميل...';
+    return balances[symbol] !== undefined ? balances[symbol] : '0.0000';
   };
 
   return (
     <main style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>NexusSwap Protocol</h1>
-        <p style={styles.subtitle}>Verified On-Chain Balances & Native Swap</p>
+        <p style={styles.subtitle}>On-Chain Token Swap & Live Balances</p>
       </div>
 
       <div style={styles.card}>
@@ -112,9 +160,10 @@ export default function Home() {
           <select 
             value={selectedNetwork} 
             onChange={(e) => {
-              setSelectedNetwork(e.target.value);
-              setFromToken(NETWORKS[e.target.value].tokens[0]);
-              setToToken(NETWORKS[e.target.value].tokens[1]);
+              const netKey = e.target.value;
+              setSelectedNetwork(netKey);
+              setFromToken(NETWORKS[netKey].tokens[0]);
+              setToToken(NETWORKS[netKey].tokens[1] || NETWORKS[netKey].tokens[0]);
             }}
             style={styles.networkSelect}
           >
@@ -128,12 +177,7 @@ export default function Home() {
               🟢 {account.substring(0, 4)}...{account.substring(account.length - 4)}
             </span>
           ) : (
-            <button onClick={async () => {
-              if (window.ethereum) {
-                const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                if (accs.length) setAccount(accs[0]);
-              }
-            }} style={styles.connectBtn}>
+            <button onClick={connectWallet} style={styles.connectBtn}>
               Connect
             </button>
           )}
@@ -143,7 +187,7 @@ export default function Home() {
         <div style={styles.inputGroup}>
           <div style={styles.labelRow}>
             <label style={styles.label}>You Pay</label>
-            {account && <span style={styles.balanceText}>Real Balance: {balances[fromToken.symbol] ?? 'Loading...'}</span>}
+            {account && <span style={styles.balanceText}>Balance: {renderBalance(fromToken.symbol)}</span>}
           </div>
           <div style={styles.row}>
             <input
@@ -171,7 +215,7 @@ export default function Home() {
         <div style={styles.inputGroup}>
           <div style={styles.labelRow}>
             <label style={styles.label}>You Receive</label>
-            {account && <span style={styles.balanceText}>Real Balance: {balances[toToken.symbol] ?? 'Loading...'}</span>}
+            {account && <span style={styles.balanceText}>Balance: {renderBalance(toToken.symbol)}</span>}
           </div>
           <div style={styles.row}>
             <input
@@ -194,12 +238,7 @@ export default function Home() {
         </div>
 
         <button 
-          onClick={async () => {
-            if (!account && window.ethereum) {
-              const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
-              if (accs.length) setAccount(accs[0]);
-            }
-          }} 
+          onClick={() => !account ? connectWallet() : alert("Processing Swap...")} 
           style={styles.swapButton}
         >
           {!account ? 'Connect Wallet' : 'Swap'}
@@ -218,7 +257,7 @@ const styles = {
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   networkSelect: { backgroundColor: '#1e2029', color: '#fff', border: '1px solid #374151', padding: '8px 12px', borderRadius: '12px', fontSize: '14px', outline: 'none' },
   connectedBadge: { backgroundColor: '#1e2029', padding: '8px 12px', borderRadius: '12px', fontSize: '12px', color: '#10b981' },
-  connectBtn: { backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer' },
+  connectBtn: { backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '14px', cursor: 'pointer', fontWeight: '600' },
   inputGroup: { backgroundColor: '#0a0b0e', padding: '16px', borderRadius: '16px', border: '1px solid #1e2029' },
   labelRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '8px' },
   label: { fontSize: '12px', color: '#9ca3af' },
