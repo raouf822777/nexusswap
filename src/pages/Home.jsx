@@ -3,7 +3,7 @@ import { LiFiWidget } from '@lifi/widget';
 
 const widgetConfig = {
   integrator: 'raouf',
-  apiKey: '0f8b58ac-1cbb-45cf-a432-ae2800eb12e8',
+  apiKey: '3b7131cd-d41d-4c0c-ad06-d47f9ffecb40.1a3ecb84-82d0-4076-bab6-4440f9850dd8',
   variant: 'expandable',
   subvariant: 'default',
   appearance: 'dark',
@@ -21,7 +21,7 @@ const widgetConfig = {
     },
   },
   sdkConfig: {
-    apiKey: '0f8b58ac-1cbb-45cf-a432-ae2800eb12e8',
+    apiKey: '3b7131cd-d41d-4c0c-ad06-d47f9ffecb40.1a3ecb84-82d0-4076-bab6-4440f9850dd8',
     defaultRouteOptions: {
       maxPriceImpact: 0.5,
       allowSwitchChain: true,
