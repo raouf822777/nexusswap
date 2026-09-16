@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-// Network definitions with official Chain IDs (Decimal & Hexadecimal)
 const NETWORKS = {
   robinhood: {
-    chainId: '0x1237', // Chain ID Decimal: 4663
+    chainId: '0x1237',
     chainName: 'Robinhood Chain',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
@@ -12,7 +11,7 @@ const NETWORKS = {
     tokens: ['ETH', 'USDC', 'HOOD', 'WBTC', 'USDT']
   },
   bsc: {
-    chainId: '0x38', // Chain ID Decimal: 56
+    chainId: '0x38',
     chainName: 'BNB Smart Chain',
     nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
     rpcUrls: ['https://bsc-dataseed.binance.org/'],
@@ -21,7 +20,7 @@ const NETWORKS = {
     tokens: ['BNB', 'USDT', 'USDC', 'CAKE', 'BUSD']
   },
   base: {
-    chainId: '0x2105', // Chain ID Decimal: 8453
+    chainId: '0x2105',
     chainName: 'Base Network',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://mainnet.base.org'],
@@ -30,7 +29,7 @@ const NETWORKS = {
     tokens: ['ETH', 'USDC', 'TOSHI', 'AERO', 'DAI']
   },
   ethereum: {
-    chainId: '0x1', // Chain ID Decimal: 1
+    chainId: '0x1',
     chainName: 'Ethereum Mainnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://eth.llamarpc.com'],
@@ -43,6 +42,8 @@ const NETWORKS = {
 export default function Home() {
   const [account, setAccount] = useState('');
   const [selectedNetwork, setSelectedNetwork] = useState('robinhood');
+  const [tokenList, setTokenList] = useState(NETWORKS['robinhood'].tokens);
+  const [balances, setBalances] = useState({});
   const [fromToken, setFromToken] = useState(NETWORKS['robinhood'].tokens[0]);
   const [toToken, setToToken] = useState(NETWORKS['robinhood'].tokens[1]);
   const [amount, setAmount] = useState('');
@@ -54,11 +55,59 @@ export default function Home() {
     checkConnection();
   }, []);
 
+  useEffect(() => {
+    if (account) {
+      fetchTokenBalances();
+    } else {
+      setTokenList(NETWORKS[selectedNetwork].tokens);
+    }
+  }, [account, selectedNetwork]);
+
+  // جلب الأرصدة وترتيب العملات حسب الرصيد
+  const fetchTokenBalances = async () => {
+    if (!window.ethereum || !account) return;
+
+    try {
+      const netTokens = NETWORKS[selectedNetwork].tokens;
+      const detectedBalances = {};
+
+      // قراءة رصيد العملة الأساسية (ETH/BNB)
+      const nativeBalanceHex = await window.ethereum.request({
+        method: 'eth_getBalance',
+        params: [account, 'latest'],
+      });
+
+      const nativeEth = (parseInt(nativeBalanceHex, 16) / 1e18).toFixed(4);
+      const nativeSymbol = NETWORKS[selectedNetwork].nativeCurrency.symbol;
+      detectedBalances[nativeSymbol] = parseFloat(nativeEth);
+
+      // إنشاء أرصدة عشوائية/تجريبية لباقي الـ Tokens للمعاينة
+      netTokens.forEach((t) => {
+        if (t !== nativeSymbol) {
+          detectedBalances[t] = detectedBalances[t] !== undefined ? detectedBalances[t] : (Math.random() > 0.5 ? (Math.random() * 50).toFixed(2) : 0);
+        }
+      });
+
+      setBalances(detectedBalances);
+
+      // فرز القائمة: العملات ذات الرصيد الأكبر في المقدمة
+      const sortedTokens = [...netTokens].sort((a, b) => {
+        const balA = parseFloat(detectedBalances[a] || 0);
+        const balB = parseFloat(detectedBalances[b] || 0);
+        return balB - balA;
+      });
+
+      setTokenList(sortedTokens);
+      setFromToken(sortedTokens[0]);
+      setToToken(sortedTokens[1] || sortedTokens[0]);
+    } catch (err) {
+      console.error('Error fetching balances:', err);
+    }
+  };
+
   const handleNetworkChange = async (netKey) => {
     setSelectedNetwork(netKey);
     const net = NETWORKS[netKey];
-    setFromToken(net.tokens[0]);
-    setToToken(net.tokens[1]);
 
     if (window.ethereum && account) {
       try {
@@ -124,7 +173,7 @@ export default function Home() {
             params: [{ chainId: net.chainId }],
           });
         } catch (err) {
-          // Switch network error handling
+          // Switch network error
         }
 
         const txParams = {
@@ -194,7 +243,10 @@ export default function Home() {
         </div>
 
         <div style={styles.inputGroup}>
-          <label style={styles.label}>You Pay ({NETWORKS[selectedNetwork].chainName})</label>
+          <div style={styles.labelRow}>
+            <label style={styles.label}>You Pay ({NETWORKS[selectedNetwork].chainName})</label>
+            {account && <span style={styles.balanceText}>Balance: {balances[fromToken] || 0}</span>}
+          </div>
           <div style={styles.row}>
             <input
               type="number"
@@ -204,8 +256,10 @@ export default function Home() {
               style={styles.input}
             />
             <select value={fromToken} onChange={(e) => setFromToken(e.target.value)} style={styles.select}>
-              {NETWORKS[selectedNetwork].tokens.map((token) => (
-                <option key={token} value={token}>{token}</option>
+              {tokenList.map((token) => (
+                <option key={token} value={token}>
+                  {token} {balances[token] ? `(${balances[token]})` : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -214,7 +268,10 @@ export default function Home() {
         <div style={styles.arrowContainer}>↓</div>
 
         <div style={styles.inputGroup}>
-          <label style={styles.label}>You Receive (Estimated)</label>
+          <div style={styles.labelRow}>
+            <label style={styles.label}>You Receive (Estimated)</label>
+            {account && <span style={styles.balanceText}>Balance: {balances[toToken] || 0}</span>}
+          </div>
           <div style={styles.row}>
             <input
               type="number"
@@ -224,8 +281,10 @@ export default function Home() {
               style={styles.inputDisabled}
             />
             <select value={toToken} onChange={(e) => setToToken(e.target.value)} style={styles.select}>
-              {NETWORKS[selectedNetwork].tokens.map((token) => (
-                <option key={token} value={token}>{token}</option>
+              {tokenList.map((token) => (
+                <option key={token} value={token}>
+                  {token} {balances[token] ? `(${balances[token]})` : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -275,11 +334,13 @@ const styles = {
   connectedBadge: { backgroundColor: '#1e2029', padding: '8px 12px', borderRadius: '12px', fontSize: '12px', color: '#10b981', border: '1px solid #10b98133' },
   connectBtn: { backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' },
   inputGroup: { backgroundColor: '#0a0b0e', padding: '16px', borderRadius: '16px', border: '1px solid #1e2029' },
-  label: { fontSize: '12px', color: '#9ca3af', display: 'block', marginBottom: '8px' },
+  labelRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '8px' },
+  label: { fontSize: '12px', color: '#9ca3af' },
+  balanceText: { fontSize: '12px', color: '#a78bfa', fontWeight: '600' },
   row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  input: { backgroundColor: 'transparent', border: 'none', color: '#fff', fontSize: '24px', outline: 'none', width: '60%' },
-  inputDisabled: { backgroundColor: 'transparent', border: 'none', color: '#6b7280', fontSize: '24px', outline: 'none', width: '60%' },
-  select: { backgroundColor: '#1e2029', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
+  input: { backgroundColor: 'transparent', border: 'none', color: '#fff', fontSize: '24px', outline: 'none', width: '50%' },
+  inputDisabled: { backgroundColor: 'transparent', border: 'none', color: '#6b7280', fontSize: '24px', outline: 'none', width: '50%' },
+  select: { backgroundColor: '#1e2029', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' },
   arrowContainer: { textAlign: 'center', margin: '12px 0', color: '#8b5cf6', fontSize: '20px' },
   swapButton: { width: '100%', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '16px', borderRadius: '16px', fontSize: '16px', fontWeight: '700', marginTop: '20px', cursor: 'pointer' },
   swapButtonDisabled: { width: '100%', backgroundColor: '#4b5563', color: '#9ca3af', border: 'none', padding: '16px', borderRadius: '16px', fontSize: '16px', fontWeight: '700', marginTop: '20px', cursor: 'not-allowed' },
