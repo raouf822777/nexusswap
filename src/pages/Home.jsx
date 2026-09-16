@@ -1,38 +1,39 @@
 import React from 'react';
-import { LiFiWidget } from '@lifi/widget';
-import { widgetConfig } from '../config/widgetConfig';
+import { SquidWidget } from '@0xsquid/widget';
 
 export default function Home() {
   return (
     <main style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>Cross-Chain Swaps</h1>
-        <p style={styles.subtitle}>At Best Rates & Security</p>
+        <h1 style={styles.title}>NexusSwap Protocol</h1>
+        <p style={styles.subtitle}>Powered by Axelar & Squid</p>
         <p style={styles.desc}>
-          Connect your wallet and swap any token across multiple blockchain networks seamlessly in seconds with minimal fees.
+          Swap any token across 60+ blockchains with deep liquidity and seamless security.
         </p>
       </div>
 
       <div style={styles.widgetWrapper}>
-        <LiFiWidget config={widgetConfig} integrator="raouf" />
-      </div>
-
-      <div style={styles.features}>
-        <div style={styles.featureCard}>
-          <span style={styles.icon}>🔒</span>
-          <h3>Top-tier Security</h3>
-          <p>All transactions are executed directly from your wallet via decentralized smart contracts.</p>
-        </div>
-        <div style={styles.featureCard}>
-          <span style={styles.icon}>🌐</span>
-          <h3>Multi-Chain Support</h3>
-          <p>Support for over 20+ blockchain ecosystems and hundreds of verified tokens.</p>
-        </div>
-        <div style={styles.featureCard}>
-          <span style={styles.icon}>🚀</span>
-          <h3>Optimal Routes</h3>
-          <p>LI.FI routing algorithms automatically find the fastest and cheapest swap paths for you.</p>
-        </div>
+        <SquidWidget
+          config={{
+            companyName: 'NexusSwap',
+            integratorId: 'nexusswap-app-build',
+            style: {
+              neutralContent: '#9CA3AF',
+              baseContent: '#FFFFFF',
+              base100: '#12131A',
+              base200: '#0A0B0E',
+              base300: '#1E2029',
+              error: '#EF4444',
+              warning: '#F59E0B',
+              success: '#10B981',
+              primary: '#8B5CF6',
+              primaryContent: '#FFFFFF',
+              roundedBtn: '9999px',
+              roundedCornerModal: '1rem',
+              roundedCornerSmall: '0.5rem',
+            },
+          }}
+        />
       </div>
     </main>
   );
@@ -75,24 +76,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     width: '100%',
-    marginBottom: '50px',
-  },
-  features: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '20px',
-    width: '100%',
-  },
-  featureCard: {
-    backgroundColor: '#12131a',
-    border: '1px solid #1e2029',
-    borderRadius: '16px',
-    padding: '24px',
-    textAlign: 'center',
-  },
-  icon: {
-    fontSize: '28px',
-    display: 'block',
-    marginBottom: '12px',
+    minHeight: '600px',
   },
 };
