@@ -1,39 +1,39 @@
 import React from 'react';
-import { SquidWidget } from '@0xsquid/widget';
+import { SwapWidget } from '@uniswap/widgets';
+
+// يمكن استخدام أي RPC عام أو خاص بـ Infura / Alchemy / Ankr
+const JSON_RPC_URL = 'https://rpc.ankr.com/eth';
 
 export default function Home() {
   return (
     <main style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>NexusSwap Protocol</h1>
-        <p style={styles.subtitle}>Powered by Axelar & Squid</p>
+        <h1 style={styles.title}>Uniswap Swap</h1>
+        <p style={styles.subtitle}>Decentralized Token Exchange</p>
         <p style={styles.desc}>
-          Swap any token across 60+ blockchains with deep liquidity and seamless security.
+          Swap ERC-20 tokens directly using Uniswap liquidity protocol.
         </p>
       </div>
 
       <div style={styles.widgetWrapper}>
-        <SquidWidget
-          config={{
-            companyName: 'NexusSwap',
-            integratorId: 'nexusswap-app-build',
-            style: {
-              neutralContent: '#9CA3AF',
-              baseContent: '#FFFFFF',
-              base100: '#12131A',
-              base200: '#0A0B0E',
-              base300: '#1E2029',
-              error: '#EF4444',
-              warning: '#F59E0B',
-              success: '#10B981',
-              primary: '#8B5CF6',
-              primaryContent: '#FFFFFF',
-              roundedBtn: '9999px',
-              roundedCornerModal: '1rem',
-              roundedCornerSmall: '0.5rem',
-            },
-          }}
-        />
+        <div className="Uniswap">
+          <SwapWidget
+            jsonRpcUrlMap={{
+              1: [JSON_RPC_URL],
+            }}
+            theme={{
+              primary: '#FFFFFF',
+              secondary: '#9CA3AF',
+              interactive: '#1E2029',
+              container: '#12131A',
+              module: '#0A0B0E',
+              accent: '#8B5CF6',
+              outline: '#262626',
+              dialog: '#12131A',
+            }}
+            width={420}
+          />
+        </div>
       </div>
     </main>
   );
@@ -62,7 +62,7 @@ const styles = {
   subtitle: {
     fontSize: '24px',
     fontWeight: '700',
-    color: '#a78bfa',
+    color: '#ff007a',
     margin: '0 0 16px 0',
   },
   desc: {
@@ -76,6 +76,6 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     width: '100%',
-    minHeight: '600px',
+    minHeight: '500px',
   },
 };
