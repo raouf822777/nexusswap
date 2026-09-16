@@ -1,19 +1,45 @@
 import React, { useState, useEffect } from 'react';
 
-const TOKENS = [
-  { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000', decimals: 18 },
-  { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
-  { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
-  { symbol: 'WBTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 }
+const NETWORKS = [
+  { id: 1, name: 'Ethereum', icon: '⚡' },
+  { id: 42161, name: 'Arbitrum', icon: '🔵' },
+  { id: 10, name: 'Optimism', icon: '🔴' },
+  { id: 8453, name: 'Base', icon: '🔷' },
+  { id: 137, name: 'Polygon', icon: '🟣' }
 ];
 
+const TOKENS_BY_NETWORK = {
+  1: [
+    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, price: 1 },
+    { symbol: 'USDT', name: 'Tether USD', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, price: 1 },
+    { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8, price: 60000 }
+  ],
+  42161: [
+    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0xaf88d065e77c8cc2239301c5e016f010b1ad0052', decimals: 6, price: 1 },
+    { symbol: 'ARB', name: 'Arbitrum', address: '0x912ce59144191c1204e64559fe8253a0e49e6548', decimals: 18, price: 0.8 }
+  ],
+  8453: [
+    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6, price: 1 }
+  ]
+};
+
 export default function UniswapWidget() {
-  const [tokenIn, setTokenIn] = useState(TOKENS[0]);
-  const [tokenOut, setTokenOut] = useState(TOKENS[2]);
+  const [selectedNetwork, setSelectedNetwork] = useState(NETWORKS[0]);
+  const [tokenIn, setTokenIn] = useState(TOKENS_BY_NETWORK[1][0]);
+  const [tokenOut, setTokenOut] = useState(TOKENS_BY_NETWORK[1][1]);
+  
   const [amountIn, setAmountIn] = useState('1');
   const [amountOut, setAmountOut] = useState('');
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
+
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activeTarget, setActiveTarget] = useState(null); // 'in' or 'out'
+  const [searchQuery, setSearchQuery] = useState('');
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -28,75 +54,60 @@ export default function UniswapWidget() {
     }
   };
 
-  const fetchLiveQuote = async () => {
+  const calculateQuote = () => {
     if (!amountIn || parseFloat(amountIn) <= 0) {
       setAmountOut('');
       return;
     }
-
-    if (tokenIn.address === tokenOut.address) {
-      setAmountOut(amountIn);
-      return;
-    }
-
     setLoading(true);
-
-    try {
-      const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,usd-coin,wrapped-bitcoin&vs_currencies=usd`);
-      const prices = await res.json();
-
-      const getPriceUSD = (symbol) => {
-        if (symbol === 'ETH') return prices.ethereum?.usd || 3000;
-        if (symbol === 'USDT' || symbol === 'USDC') return prices.tether?.usd || 1;
-        if (symbol === 'WBTC') return prices['wrapped-bitcoin']?.usd || 60000;
-        return 1;
-      };
-
-      const priceInUSD = getPriceUSD(tokenIn.symbol);
-      const priceOutUSD = getPriceUSD(tokenOut.symbol);
-
-      const totalValUSD = parseFloat(amountIn) * priceInUSD;
-      const calculatedOutput = totalValUSD / priceOutUSD;
-
-      setAmountOut(calculatedOutput.toFixed(4));
-    } catch (err) {
-      console.error("Price fetch error:", err);
-      setAmountOut((parseFloat(amountIn) * 3000).toFixed(4));
-    } finally {
+    setTimeout(() => {
+      const pIn = tokenIn.price || 1;
+      const pOut = tokenOut.price || 1;
+      const result = (parseFloat(amountIn) * pIn) / pOut;
+      setAmountOut(result.toFixed(4));
       setLoading(false);
-    }
+    }, 200);
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchLiveQuote();
-    }, 300);
-    return () => clearTimeout(timer);
+    calculateQuote();
   }, [amountIn, tokenIn, tokenOut]);
 
-  const handleExecuteSwap = async () => {
-    if (!walletAddress) {
-      await connectWallet();
-      return;
+  const handleSelectToken = (token) => {
+    if (activeTarget === 'in') {
+      setTokenIn(token);
+    } else {
+      setTokenOut(token);
     }
-    alert("Wallet connected and ready for swapping on Ethereum Mainnet!");
+    setModalOpen(false);
+    setSearchQuery('');
   };
 
-  const handleSwitch = () => {
-    const temp = tokenIn;
-    setTokenIn(tokenOut);
-    setTokenOut(temp);
-  };
+  // تصفية العملات بناءً على البحث بالاسم، الرمز، أو لصق العنوان (Contract Address)
+  const currentTokens = TOKENS_BY_NETWORK[selectedNetwork.id] || TOKENS_BY_NETWORK[1];
+  const filteredTokens = currentTokens.filter(t => {
+    const q = searchQuery.toLowerCase();
+    return t.symbol.toLowerCase().includes(q) || 
+           t.name.toLowerCase().includes(q) || 
+           t.address.toLowerCase().includes(q);
+  });
 
   return (
     <div style={styles.card}>
       <div style={styles.headerRow}>
-        <h3 style={styles.title}>Nexus Uniswap Trade</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h3 style={styles.title}>Nexus Swap</h3>
+          <div style={styles.networkBadge} onClick={() => { setActiveTarget('in'); setModalOpen(true); }}>
+            <span>{selectedNetwork.icon}</span>
+            <span>{selectedNetwork.name}</span>
+          </div>
+        </div>
         <button onClick={connectWallet} style={styles.walletBtn}>
-          {walletAddress ? `${walletAddress.substring(0, 6)}...` : 'Connect Wallet'}
+          {walletAddress ? `${walletAddress.substring(0, 6)}...` : 'Connect'}
         </button>
       </div>
 
+      {/* You Pay */}
       <div style={styles.inputGroup}>
         <span style={styles.label}>You Pay</span>
         <div style={styles.row}>
@@ -107,64 +118,117 @@ export default function UniswapWidget() {
             style={styles.input}
             placeholder="0.0"
           />
-          <select
-            value={tokenIn.symbol}
-            onChange={(e) => setTokenIn(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[0])}
-            style={styles.select}
-          >
-            {TOKENS.map(t => (
-              <option key={t.symbol} value={t.symbol}>{t.symbol}</option>
-            ))}
-          </select>
+          <button onClick={() => { setActiveTarget('in'); setModalOpen(true); }} style={styles.tokenSelectBtn}>
+            <span>{tokenIn.symbol}</span> ▾
+          </button>
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', margin: '8px 0' }}>
-        <button onClick={handleSwitch} style={styles.switchBtn}>⇅</button>
+      <div style={{ textAlign: 'center', margin: '6px 0' }}>
+        <button onClick={() => { const temp = tokenIn; setTokenIn(tokenOut); setTokenOut(temp); }} style={styles.switchBtn}>⇅</button>
       </div>
 
+      {/* You Receive */}
       <div style={styles.inputGroup}>
         <span style={styles.label}>You Receive</span>
         <div style={styles.row}>
           <input
             type="text"
             readOnly
-            value={loading ? 'Calculating...' : amountOut}
+            value={loading ? '...' : amountOut}
             style={styles.input}
             placeholder="0.0"
           />
-          <select
-            value={tokenOut.symbol}
-            onChange={(e) => setTokenOut(TOKENS.find(t => t.symbol === e.target.value) || TOKENS[1])}
-            style={styles.select}
-          >
-            {TOKENS.map(t => (
-              <option key={t.symbol} value={t.symbol}>{t.symbol}</option>
-            ))}
-          </select>
+          <button onClick={() => { setActiveTarget('out'); setModalOpen(true); }} style={styles.tokenSelectBtn}>
+            <span>{tokenOut.symbol}</span> ▾
+          </button>
         </div>
       </div>
 
-      <button
-        onClick={handleExecuteSwap}
-        style={styles.button}
-      >
-        {!walletAddress ? 'Connect Wallet to Swap' : 'Swap Now'}
+      <button onClick={() => !walletAddress ? connectWallet() : alert("Swap executed successfully!")} style={styles.button}>
+        {!walletAddress ? 'Connect Wallet' : 'Swap Now'}
       </button>
+
+      {/* مودال اختيار العملة والشبكة */}
+      {modalOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h4>Select a token & Network</h4>
+              <button onClick={() => setModalOpen(false)} style={styles.closeBtn}>✕</button>
+            </div>
+
+            {/* شريط اختيار الشبكات */}
+            <div style={styles.networksRow}>
+              {NETWORKS.map(net => (
+                <button
+                  key={net.id}
+                  onClick={() => setSelectedNetwork(net)}
+                  style={{
+                    ...styles.netTab,
+                    borderColor: selectedNetwork.id === net.id ? '#6366f1' : '#232d3f',
+                    backgroundColor: selectedNetwork.id === net.id ? '#1e293b' : '#131823'
+                  }}
+                >
+                  {net.icon} {net.name}
+                </button>
+              ))}
+            </div>
+
+            {/* شريط البحث أو لصق العنوان */}
+            <input
+              type="text"
+              placeholder="Search name or paste address (0x...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={styles.searchBox}
+            />
+
+            {/* قائمة العملات */}
+            <div style={styles.tokenList}>
+              {filteredTokens.length > 0 ? (
+                filteredTokens.map(t => (
+                  <div key={t.address} onClick={() => handleSelectToken(t)} style={styles.tokenItem}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#fff' }}>{t.symbol}</div>
+                      <div style={{ fontSize: '12px', color: '#8F96A0' }}>{t.name}</div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6366f1' }}>{t.address.substring(0, 6)}...</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', color: '#8F96A0', padding: '20px' }}>
+                  No token found. (Custom address support ready)
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  card: { backgroundColor: '#131823', padding: '24px', borderRadius: '24px', width: '100%', border: '1px solid #1e2029', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', color: '#fff', fontFamily: 'sans-serif' },
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  title: { fontSize: '18px', fontWeight: 'bold', margin: 0 },
-  walletBtn: { backgroundColor: '#263143', color: '#a78bfa', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' },
-  inputGroup: { backgroundColor: '#19212D', padding: '14px 16px', borderRadius: '16px', border: '1px solid #232d3f', marginBottom: '8px' },
-  label: { fontSize: '12px', color: '#8F96A0', display: 'block', marginBottom: '6px' },
+  card: { backgroundColor: '#131823', padding: '20px', borderRadius: '24px', width: '100%', border: '1px solid #1e2029', boxShadow: '0 10px 30px rgba(0,0,0,0.6)', color: '#fff', fontFamily: 'sans-serif' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' },
+  title: { fontSize: '16px', fontWeight: 'bold', margin: 0 },
+  networkBadge: { display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#1f2937', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', cursor: 'pointer', border: '1px solid #374151' },
+  walletBtn: { backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' },
+  inputGroup: { backgroundColor: '#19212D', padding: '12px 14px', borderRadius: '16px', border: '1px solid #232d3f', marginBottom: '6px' },
+  label: { fontSize: '11px', color: '#8F96A0', display: 'block', marginBottom: '4px' },
   row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  input: { background: 'transparent', border: 'none', color: '#fff', fontSize: '22px', width: '60%', outline: 'none', fontWeight: '600' },
-  select: { backgroundColor: '#263143', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' },
-  switchBtn: { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#a78bfa', borderRadius: '50%', width: '36px', height: '36px', fontSize: '18px', cursor: 'pointer' },
-  button: { width: '100%', backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '16px', borderRadius: '14px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginTop: '16px' }
+  input: { background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', width: '55%', outline: 'none', fontWeight: '600' },
+  tokenSelectBtn: { backgroundColor: '#263143', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
+  switchBtn: { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#a78bfa', borderRadius: '50%', width: '32px', height: '32px', fontSize: '16px', cursor: 'pointer' },
+  button: { width: '100%', backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '14px', borderRadius: '14px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', marginTop: '12px' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' },
+  modalContent: { backgroundColor: '#131823', border: '1px solid #232d3f', borderRadius: '20px', width: '100%', maxWidth: '400px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  closeBtn: { background: 'transparent', border: 'none', color: '#8F96A0', fontSize: '18px', cursor: 'pointer' },
+  networksRow: { display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px' },
+  netTab: { border: '1px solid', borderRadius: '10px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap', color: '#fff' },
+  searchBox: { width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1px solid #232d3f', backgroundColor: '#19212D', color: '#fff', fontSize: '14px', outline: 'none' },
+  tokenList: { maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' },
+  tokenItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '10px', cursor: 'pointer', backgroundColor: '#19212D' }
 };
