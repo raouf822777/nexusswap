@@ -9,16 +9,19 @@ const NETWORKS = [
   { id: 4663, name: 'Robinhood', icon: '🪶' }
 ];
 
-const TOKENS_BY_NETWORK = {
+const INITIAL_TOKENS_BY_NETWORK = {
   1: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, price: 1 },
-    { symbol: 'USDT', name: 'Tether USD', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, price: 1 }
+    { symbol: 'USDT', name: 'Tether USD', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, price: 1 },
+    { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', decimals: 8, price: 65000 },
+    { symbol: 'PEPE', name: 'Pepe', address: '0x6982508145454ce325ddbe47a25d4ec3d2311933', decimals: 18, type: 'meme', price: 0.00001 }
   ],
   42161: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0xaf88d065e77c8cc2239301c5e016f010b1ad0052', decimals: 6, price: 1 },
-    { symbol: 'ARB', name: 'Arbitrum', address: '0x912ce59144191c1204e64559fe8253a0e49e6548', decimals: 18, price: 0.8 }
+    { symbol: 'ARB', name: 'Arbitrum', address: '0x912ce59144191c1204e64559fe8253a0e49e6548', decimals: 18, price: 0.8 },
+    { symbol: 'GMX', name: 'GMX', address: '0xfc5a1a6eb07642d71758235390694819475b9f0f', decimals: 18, price: 35 }
   ],
   10: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
@@ -27,7 +30,8 @@ const TOKENS_BY_NETWORK = {
   ],
   8453: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
-    { symbol: 'USDC', name: 'USD Coin', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6, price: 1 }
+    { symbol: 'USDC', name: 'USD Coin', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6, price: 1 },
+    { symbol: 'DEGEN', name: 'Degen', address: '0x4ed4e862860bed51a9570b96d89af5e1b0efefed', decimals: 18, price: 0.01 }
   ],
   137: [
     { symbol: 'POL', name: 'Polygon', address: '0x0000000000000000000000000000000000001010', decimals: 18, price: 0.5 },
@@ -41,8 +45,10 @@ const TOKENS_BY_NETWORK = {
 
 export default function UniswapWidget() {
   const [selectedNetwork, setSelectedNetwork] = useState(NETWORKS[0]);
-  const [tokenIn, setTokenIn] = useState(TOKENS_BY_NETWORK[1][0]);
-  const [tokenOut, setTokenOut] = useState(TOKENS_BY_NETWORK[1][1]);
+  const [tokensByNetwork, setTokensByNetwork] = useState(INITIAL_TOKENS_BY_NETWORK);
+  
+  const [tokenIn, setTokenIn] = useState(INITIAL_TOKENS_BY_NETWORK[1][0]);
+  const [tokenOut, setTokenOut] = useState(INITIAL_TOKENS_BY_NETWORK[1][1]);
   
   const [amountIn, setAmountIn] = useState('1');
   const [amountOut, setAmountOut] = useState('');
@@ -52,6 +58,36 @@ export default function UniswapWidget() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activeTarget, setActiveTarget] = useState(null); 
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 1. نظام جلب وتحديث الأسعار تلقائياً كل 10 ثوانٍ (Live Price Polling)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTokensByNetwork(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(netId => {
+          updated[netId] = updated[netId].map(t => {
+            // محاكاة تغير طفيف في السعر بنسبة عشوائية بسيطة بين -1% و +1%
+            const changePercent = (Math.random() * 2 - 1) / 100;
+            const newPrice = Math.max(0.000001, t.price * (1 + changePercent));
+            return { ...t, price: Number(newPrice.toFixed(t.price < 1 ? 6 : 2)) };
+          });
+        });
+        return updated;
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // تحديث أسعار العملات المختارة حالياً في واجهة الـ Swap عند تغيرها في القائمة
+  useEffect(() => {
+    const currentList = tokensByNetwork[selectedNetwork.id] || [];
+    const updatedIn = currentList.find(t => t.address.toLowerCase() === tokenIn.address.toLowerCase());
+    const updatedOut = currentList.find(t => t.address.toLowerCase() === tokenOut.address.toLowerCase());
+    
+    if (updatedIn) setTokenIn(updatedIn);
+    if (updatedOut) setTokenOut(updatedOut);
+  }, [tokensByNetwork]);
 
   const connectWallet = async () => {
     if (window.ethereum) {
@@ -78,7 +114,7 @@ export default function UniswapWidget() {
       const result = (parseFloat(amountIn) * pIn) / pOut;
       setAmountOut(result.toFixed(4));
       setLoading(false);
-    }, 200);
+    }, 150);
   };
 
   useEffect(() => {
@@ -87,12 +123,23 @@ export default function UniswapWidget() {
 
   const handleNetworkChange = (net) => {
     setSelectedNetwork(net);
-    const netTokens = TOKENS_BY_NETWORK[net.id] || TOKENS_BY_NETWORK[1];
+    const netTokens = tokensByNetwork[net.id] || tokensByNetwork[1];
     setTokenIn(netTokens[0]);
     setTokenOut(netTokens[1] || netTokens[0]);
   };
 
   const handleSelectToken = (token) => {
+    // التحقق مما إذا كانت العملة موجودة مسبقاً في القائمة لهذه الشبكة، وإذا لم تكن موجودة نضيفها
+    const netList = tokensByNetwork[selectedNetwork.id] || [];
+    const exists = netList.some(t => t.address.toLowerCase() === token.address.toLowerCase());
+    
+    if (!exists) {
+      setTokensByNetwork(prev => ({
+        ...prev,
+        [selectedNetwork.id]: [token, ...(prev[selectedNetwork.id] || [])]
+      }));
+    }
+
     if (activeTarget === 'in') {
       setTokenIn(token);
     } else {
@@ -102,22 +149,21 @@ export default function UniswapWidget() {
     setSearchQuery('');
   };
 
-  const currentTokens = TOKENS_BY_NETWORK[selectedNetwork.id] || TOKENS_BY_NETWORK[1];
-  
-  // تنظيف نص البحث وإزالة أي رموز غير طابعة قد تأتي من لوحة المفاتيح
+  const currentTokens = tokensByNetwork[selectedNetwork.id] || tokensByNetwork[1];
   const cleanedQuery = searchQuery.trim().toLowerCase();
 
+  // تصفية العملات بالاسم، الرمز، أو عنوان العقد
   const filteredTokens = currentTokens.filter(t => {
     return t.symbol.toLowerCase().includes(cleanedQuery) || 
            t.name.toLowerCase().includes(cleanedQuery) || 
            t.address.toLowerCase().includes(cleanedQuery);
   });
 
-  // التحقق مما إذا كان النص المكتوب عنوان عقد صالح (يبدأ بـ 0x وطوله 42 حرفاً)
+  // إذا كان المدخل عنوان عقد صحيح (0x...) ولم يكن في القائمة، نقوم بتوليد عملة ذكية تتكيف مع المدخل تلقائياً
   const isEthAddress = cleanedQuery.startsWith('0x') && cleanedQuery.length === 42;
-  const customToken = isEthAddress ? {
-    symbol: 'CUSTOM',
-    name: 'Custom Imported Token',
+  const customToken = isEthAddress && !filteredTokens.some(t => t.address.toLowerCase() === cleanedQuery) ? {
+    symbol: cleanedQuery.substring(2, 6).toUpperCase(),
+    name: `Custom Token (${cleanedQuery.substring(0, 6)}...)`,
     address: searchQuery.trim(),
     decimals: 18,
     price: 1
@@ -139,7 +185,10 @@ export default function UniswapWidget() {
       </div>
 
       <div style={styles.inputGroup}>
-        <span style={styles.label}>You Pay</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span style={styles.label}>You Pay</span>
+          <span style={styles.priceLabel}>Price: ${tokenIn.price}</span>
+        </div>
         <div style={styles.row}>
           <input
             type="number"
@@ -159,7 +208,10 @@ export default function UniswapWidget() {
       </div>
 
       <div style={styles.inputGroup}>
-        <span style={styles.label}>You Receive</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span style={styles.label}>You Receive</span>
+          <span style={styles.priceLabel}>Price: ${tokenOut.price}</span>
+        </div>
         <div style={styles.row}>
           <input
             type="text"
@@ -204,7 +256,7 @@ export default function UniswapWidget() {
 
             <input
               type="text"
-              placeholder="Search name or paste address (0x...)"
+              placeholder="Search name, symbol or paste 0x address"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={styles.searchBox}
@@ -215,23 +267,27 @@ export default function UniswapWidget() {
                 filteredTokens.map(t => (
                   <div key={t.address} onClick={() => handleSelectToken(t)} style={styles.tokenItem}>
                     <div>
-                      <div style={{ fontWeight: 'bold', color: '#fff' }}>{t.symbol}</div>
+                      <div style={{ fontWeight: 'bold', color: '#fff' }}>{t.symbol} <span style={{ fontSize: '11px', color: '#8F96A0' }}>(${t.price})</span></div>
                       <div style={{ fontSize: '12px', color: '#8F96A0' }}>{t.name}</div>
                     </div>
                     <div style={{ fontSize: '11px', color: '#6366f1' }}>{t.address.substring(0, 6)}...</div>
                   </div>
                 ))
-              ) : customToken ? (
-                <div onClick={() => handleSelectToken(customToken)} style={{ ...styles.tokenItem, backgroundColor: '#1e293b', border: '1px solid #6366f1' }}>
+              ) : null}
+
+              {customToken && (
+                <div onClick={() => handleSelectToken(customToken)} style={{ ...styles.tokenItem, backgroundColor: '#1e293b', border: '1px solid #6366f1', marginTop: '4px' }}>
                   <div>
-                    <div style={{ fontWeight: 'bold', color: '#a78bfa' }}>Import Custom Token</div>
-                    <div style={{ fontSize: '11px', color: '#8F96A0' }}>{customToken.address.substring(0, 10)}...</div>
+                    <div style={{ fontWeight: 'bold', color: '#a78bfa' }}>Import: {customToken.symbol}</div>
+                    <div style={{ fontSize: '11px', color: '#8F96A0' }}>{customToken.address}</div>
                   </div>
                   <button style={styles.importBtn}>Import</button>
                 </div>
-              ) : (
+              )}
+
+              {filteredTokens.length === 0 && !customToken && (
                 <div style={{ textAlign: 'center', color: '#8F96A0', padding: '20px' }}>
-                  No token found. Paste a valid 0x contract address.
+                  No token found. Paste a valid contract address starting with 0x.
                 </div>
               )}
             </div>
@@ -249,8 +305,9 @@ const styles = {
   networkBadge: { display: 'flex', alignItems: 'center', gap: '4px', backgroundColor: '#1f2937', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', cursor: 'pointer', border: '1px solid #374151' },
   walletBtn: { backgroundColor: '#6366f1', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '10px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' },
   inputGroup: { backgroundColor: '#19212D', padding: '12px 14px', borderRadius: '16px', border: '1px solid #232d3f', marginBottom: '6px' },
-  label: { fontSize: '11px', color: '#8F96A0', display: 'block', marginBottom: '4px' },
-  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  label: { fontSize: '11px', color: '#8F96A0', display: 'block' },
+  priceLabel: { fontSize: '11px', color: '#10b981', fontWeight: 'bold' },
+  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' },
   input: { background: 'transparent', border: 'none', color: '#fff', fontSize: '20px', width: '55%', outline: 'none', fontWeight: '600' },
   tokenSelectBtn: { backgroundColor: '#263143', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
   switchBtn: { backgroundColor: '#1f2937', border: '1px solid #374151', color: '#a78bfa', borderRadius: '50%', width: '32px', height: '32px', fontSize: '16px', cursor: 'pointer' },
