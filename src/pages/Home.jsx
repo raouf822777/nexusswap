@@ -1,44 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LiFiWidget } from '@lifi/widget';
-
-const widgetConfig = {
-  integrator: 'raouf',
-  apiKey: '3b7131cd-d41d-4c0c-ad06-d47f9ffecb40.1a3ecb84-82d0-4076-bab6-4440f9850dd8',
-  variant: 'expandable',
-  subvariant: 'default',
-  appearance: 'dark',
-  theme: {
-    palette: {
-      primary: { main: '#8b5cf6' },
-      background: {
-        paper: '#12131a',
-        default: '#0a0b0e',
-      },
-    },
-    shape: {
-      borderRadius: 16,
-      borderRadiusSecondary: 12,
-    },
-  },
-  // تعيين سيرفرات RPC موثوقة ومجانية لتجنب أخطاء الشبكة العامّة
-  rpcUrls: {
-    1: ['https://cloudflare-eth.com', 'https://rpc.ankr.com/eth'], // Ethereum Mainnet
-    137: ['https://polygon-bor-rpc.publicnode.com', 'https://rpc.ankr.com/polygon'], // Polygon
-    42161: ['https://arb1.arbitrum.io/rpc', 'https://rpc.ankr.com/arbitrum'], // Arbitrum
-    10: ['https://mainnet.optimism.io', 'https://rpc.ankr.com/optimism'], // Optimism
-    56: ['https://bsc-dataseed.binance.org', 'https://rpc.ankr.com/bsc'], // BSC
-    8453: ['https://mainnet.base.org', 'https://developer-access-mainnet.base.org'], // Base
-  },
-  sdkConfig: {
-    apiKey: '3b7131cd-d41d-4c0c-ad06-d47f9ffecb40.1a3ecb84-82d0-4076-bab6-4440f9850dd8',
-    defaultRouteOptions: {
-      maxPriceImpact: 0.8,
-      allowSwitchChain: true,
-    },
-  },
-};
+import { getWidgetConfig } from '../config/widgetConfig';
 
 export default function Home() {
+  const widgetConfig = useMemo(() => getWidgetConfig(), []);
+
   return (
     <main style={styles.container}>
       <div style={styles.header}>
