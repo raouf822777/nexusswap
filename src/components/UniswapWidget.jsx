@@ -5,15 +5,15 @@ const NETWORKS = [
   { id: 42161, name: 'Arbitrum', icon: '🔵' },
   { id: 10, name: 'Optimism', icon: '🔴' },
   { id: 8453, name: 'Base', icon: '🔷' },
-  { id: 137, name: 'Polygon', icon: '🟣' }
+  { id: 137, name: 'Polygon', icon: '🟣' },
+  { id: 4663, name: 'Robinhood', icon: '🪶' }
 ];
 
 const TOKENS_BY_NETWORK = {
   1: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6, price: 1 },
-    { symbol: 'USDT', name: 'Tether USD', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, price: 1 },
-    { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8, price: 60000 }
+    { symbol: 'USDT', name: 'Tether USD', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6, price: 1 }
   ],
   42161: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
@@ -23,6 +23,10 @@ const TOKENS_BY_NETWORK = {
   8453: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6, price: 1 }
+  ],
+  4663: [
+    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0x2222222222222222222222222222222222222222', decimals: 6, price: 1 }
   ]
 };
 
@@ -36,9 +40,8 @@ export default function UniswapWidget() {
   const [loading, setLoading] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
 
-  // Modal State
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeTarget, setActiveTarget] = useState(null); // 'in' or 'out'
+  const [activeTarget, setActiveTarget] = useState(null); 
   const [searchQuery, setSearchQuery] = useState('');
 
   const connectWallet = async () => {
@@ -83,7 +86,6 @@ export default function UniswapWidget() {
     setSearchQuery('');
   };
 
-  // تصفية العملات بناءً على البحث بالاسم، الرمز، أو لصق العنوان (Contract Address)
   const currentTokens = TOKENS_BY_NETWORK[selectedNetwork.id] || TOKENS_BY_NETWORK[1];
   const filteredTokens = currentTokens.filter(t => {
     const q = searchQuery.toLowerCase();
@@ -107,7 +109,6 @@ export default function UniswapWidget() {
         </button>
       </div>
 
-      {/* You Pay */}
       <div style={styles.inputGroup}>
         <span style={styles.label}>You Pay</span>
         <div style={styles.row}>
@@ -128,7 +129,6 @@ export default function UniswapWidget() {
         <button onClick={() => { const temp = tokenIn; setTokenIn(tokenOut); setTokenOut(temp); }} style={styles.switchBtn}>⇅</button>
       </div>
 
-      {/* You Receive */}
       <div style={styles.inputGroup}>
         <span style={styles.label}>You Receive</span>
         <div style={styles.row}>
@@ -149,7 +149,6 @@ export default function UniswapWidget() {
         {!walletAddress ? 'Connect Wallet' : 'Swap Now'}
       </button>
 
-      {/* مودال اختيار العملة والشبكة */}
       {modalOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
@@ -158,12 +157,16 @@ export default function UniswapWidget() {
               <button onClick={() => setModalOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
 
-            {/* شريط اختيار الشبكات */}
             <div style={styles.networksRow}>
               {NETWORKS.map(net => (
                 <button
                   key={net.id}
-                  onClick={() => setSelectedNetwork(net)}
+                  onClick={() => {
+                    setSelectedNetwork(net);
+                    const netTokens = TOKENS_BY_NETWORK[net.id] || TOKENS_BY_NETWORK[1];
+                    if (activeTarget === 'in') setTokenIn(netTokens[0]);
+                    else setTokenOut(netTokens[1] || netTokens[0]);
+                  }}
                   style={{
                     ...styles.netTab,
                     borderColor: selectedNetwork.id === net.id ? '#6366f1' : '#232d3f',
@@ -175,7 +178,6 @@ export default function UniswapWidget() {
               ))}
             </div>
 
-            {/* شريط البحث أو لصق العنوان */}
             <input
               type="text"
               placeholder="Search name or paste address (0x...)"
@@ -184,7 +186,6 @@ export default function UniswapWidget() {
               style={styles.searchBox}
             />
 
-            {/* قائمة العملات */}
             <div style={styles.tokenList}>
               {filteredTokens.length > 0 ? (
                 filteredTokens.map(t => (
