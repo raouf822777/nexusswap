@@ -24,11 +24,10 @@ export default function UniswapWidget() {
         console.error("Wallet connection rejected:", err);
       }
     } else {
-      alert("الرجاء تثبيت محفظة مثل MetaMask");
+      alert("Please install a Web3 wallet like MetaMask");
     }
   };
 
-  // جلب أسعار حية موثوقة ومضمونة التوافق مع المتصفحات
   const fetchLiveQuote = async () => {
     if (!amountIn || parseFloat(amountIn) <= 0) {
       setAmountOut('');
@@ -43,7 +42,6 @@ export default function UniswapWidget() {
     setLoading(true);
 
     try {
-      // استخدام خدمة جلب أسعار لامركزية موثوقة لا تواجه مشاكل CORS في المتصفح
       const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=ethereum,tether,usd-coin,wrapped-bitcoin&vs_currencies=usd`);
       const prices = await res.json();
 
@@ -81,7 +79,7 @@ export default function UniswapWidget() {
       await connectWallet();
       return;
     }
-    alert("المحفظة متصلة وجاهزة لتنفيذ التبادل عبر شبكة إيثريوم الرئيسية!");
+    alert("Wallet connected and ready for swapping on Ethereum Mainnet!");
   };
 
   const handleSwitch = () => {
@@ -95,12 +93,12 @@ export default function UniswapWidget() {
       <div style={styles.headerRow}>
         <h3 style={styles.title}>Nexus Uniswap Trade</h3>
         <button onClick={connectWallet} style={styles.walletBtn}>
-          {walletAddress ? `${walletAddress.substring(0, 6)}...` : 'ربط المحفظة'}
+          {walletAddress ? `${walletAddress.substring(0, 6)}...` : 'Connect Wallet'}
         </button>
       </div>
 
       <div style={styles.inputGroup}>
-        <span style={styles.label}>أنت تدفع (You Pay)</span>
+        <span style={styles.label}>You Pay</span>
         <div style={styles.row}>
           <input
             type="number"
@@ -126,12 +124,12 @@ export default function UniswapWidget() {
       </div>
 
       <div style={styles.inputGroup}>
-        <span style={styles.label}>أنت تستلم (You Receive)</span>
+        <span style={styles.label}>You Receive</span>
         <div style={styles.row}>
           <input
             type="text"
             readOnly
-            value={loading ? 'جاري الحساب...' : amountOut}
+            value={loading ? 'Calculating...' : amountOut}
             style={styles.input}
             placeholder="0.0"
           />
@@ -151,7 +149,7 @@ export default function UniswapWidget() {
         onClick={handleExecuteSwap}
         style={styles.button}
       >
-        {!walletAddress ? 'ربط المحفظة للتداول' : 'مبادلة الآن (Swap & Sign)'}
+        {!walletAddress ? 'Connect Wallet to Swap' : 'Swap Now'}
       </button>
     </div>
   );
