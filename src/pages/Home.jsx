@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// تعريف الشبكات المتاحة متضمنة Robinhood بمعرفاتها الدقيقة (Decimal & Hex)
+// Network definitions with official Chain IDs (Decimal & Hexadecimal)
 const NETWORKS = {
   robinhood: {
     chainId: '0x1237', // Chain ID Decimal: 4663
@@ -80,7 +80,7 @@ export default function Home() {
               }],
             });
           } catch (addError) {
-            console.error('فشل إضافة الشبكة:', addError);
+            console.error('Failed to add network:', addError);
           }
         }
       }
@@ -107,12 +107,12 @@ export default function Home() {
     }
 
     if (!amount || parseFloat(amount) <= 0) {
-      alert('يرجى إدخال مبلغ صحيح للتبادل.');
+      alert('Please enter a valid amount to swap.');
       return;
     }
 
     setSwapping(true);
-    setSwapStatus('جاري التحقق من الشبكة وتأكيد المعاملة في المحفظة...');
+    setSwapStatus('Checking network and confirming transaction in wallet...');
 
     try {
       const net = NETWORKS[selectedNetwork];
@@ -124,7 +124,7 @@ export default function Home() {
             params: [{ chainId: net.chainId }],
           });
         } catch (err) {
-          // التعامل مع خطأ التبديل
+          // Switch network error handling
         }
 
         const txParams = {
@@ -138,11 +138,11 @@ export default function Home() {
           params: [txParams],
         });
 
-        setSwapStatus(`تم إرسال المعاملة بنجاح! Hash: ${txHash.substring(0, 10)}...`);
+        setSwapStatus(`Transaction submitted successfully! Hash: ${txHash.substring(0, 10)}...`);
       }
     } catch (err) {
       console.error(err);
-      setSwapStatus('تم إلغاء المعاملة أو حدث خطأ أثناء التبادل.');
+      setSwapStatus('Transaction cancelled or an error occurred during swap.');
     } finally {
       setTimeout(() => setSwapping(false), 4000);
     }
@@ -158,7 +158,7 @@ export default function Home() {
         }
       }
     } catch (err) {
-      console.error('خطأ في الاتصال:', err);
+      console.error('Connection error:', err);
     }
   };
 
@@ -240,7 +240,7 @@ export default function Home() {
           disabled={swapping}
           style={swapping ? styles.swapButtonDisabled : styles.swapButton}
         >
-          {swapping ? 'جاري المعالجة...' : !account ? 'Connect Wallet' : `Swap ${fromToken} to ${toToken}`}
+          {swapping ? 'Processing...' : !account ? 'Connect Wallet' : `Swap ${fromToken} to ${toToken}`}
         </button>
       </div>
 
