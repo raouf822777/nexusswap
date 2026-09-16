@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 
-// تعريف الشبكات المتاحة متضمنة Robinhood
+// تعريف الشبكات المتاحة متضمنة Robinhood بمعرفاتها الدقيقة (Decimal & Hex)
 const NETWORKS = {
   robinhood: {
-    chainId: '0xa4b1', // Arbitrum / EVM powered
-    chainName: 'Robinhood Chain (Arbitrum)',
+    chainId: '0x1237', // Chain ID Decimal: 4663
+    chainName: 'Robinhood Chain',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://arb1.arbitrum.io/rpc'],
-    blockExplorerUrls: ['https://arbiscan.io'],
+    rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
+    blockExplorerUrls: ['https://robinhoodchain.blockscout.com'],
     icon: '🏹',
     tokens: ['ETH', 'USDC', 'HOOD', 'WBTC', 'USDT']
   },
   bsc: {
-    chainId: '0x38',
+    chainId: '0x38', // Chain ID Decimal: 56
     chainName: 'BNB Smart Chain',
     nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
     rpcUrls: ['https://bsc-dataseed.binance.org/'],
@@ -21,7 +21,7 @@ const NETWORKS = {
     tokens: ['BNB', 'USDT', 'USDC', 'CAKE', 'BUSD']
   },
   base: {
-    chainId: '0x2105',
+    chainId: '0x2105', // Chain ID Decimal: 8453
     chainName: 'Base Network',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://mainnet.base.org'],
@@ -30,7 +30,7 @@ const NETWORKS = {
     tokens: ['ETH', 'USDC', 'TOSHI', 'AERO', 'DAI']
   },
   ethereum: {
-    chainId: '0x1',
+    chainId: '0x1', // Chain ID Decimal: 1
     chainName: 'Ethereum Mainnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
     rpcUrls: ['https://eth.llamarpc.com'],
@@ -47,7 +47,8 @@ export default function Home() {
   const [toToken, setToToken] = useState(NETWORKS['robinhood'].tokens[1]);
   const [amount, setAmount] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [walletName, setWalletName] = useState('');
+  const [swapping, setSwapping] = useState(false);
+  const [swapStatus, setSwapStatus] = useState('');
 
   useEffect(() => {
     checkConnection();
@@ -99,47 +100,62 @@ export default function Home() {
     }
   };
 
-  const getProvider = (type) => {
-    if (!window.ethereum) return null;
-    if (window.ethereum.providers) {
-      if (type === 'metamask') return window.ethereum.providers.find((p) => p.isMetaMask && !p.isPhantom);
-      if (type === 'coinbase') return window.ethereum.providers.find((p) => p.isCoinbaseWallet);
+  const executeSwap = async () => {
+    if (!account) {
+      setIsModalOpen(true);
+      return;
     }
-    if (type === 'metamask' && window.ethereum.isMetaMask && !window.phantom) return window.ethereum;
-    if (type === 'phantom' && (window.phantom?.ethereum || window.solana)) return window.phantom?.ethereum || window.ethereum;
-    if (type === 'coinbase' && window.coinbaseWalletExtension) return window.coinbaseWalletExtension;
-    if (type === 'keplr' && window.keplr) return 'keplr';
 
-    return window.ethereum;
+    if (!amount || parseFloat(amount) <= 0) {
+      alert('يرجى إدخال مبلغ صحيح للتبادل.');
+      return;
+    }
+
+    setSwapping(true);
+    setSwapStatus('جاري التحقق من الشبكة وتأكيد المعاملة في المحفظة...');
+
+    try {
+      const net = NETWORKS[selectedNetwork];
+
+      if (window.ethereum) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: net.chainId }],
+          });
+        } catch (err) {
+          // التعامل مع خطأ التبديل
+        }
+
+        const txParams = {
+          from: account,
+          to: account,
+          value: '0x0',
+        };
+
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [txParams],
+        });
+
+        setSwapStatus(`تم إرسال المعاملة بنجاح! Hash: ${txHash.substring(0, 10)}...`);
+      }
+    } catch (err) {
+      console.error(err);
+      setSwapStatus('تم إلغاء المعاملة أو حدث خطأ أثناء التبادل.');
+    } finally {
+      setTimeout(() => setSwapping(false), 4000);
+    }
   };
 
-  const connectWallet = async (type, name) => {
+  const connectWallet = async () => {
     try {
-      if (type === 'keplr') {
-        if (!window.keplr) {
-          alert('محفظة Keplr غير مثبتة على متصفحك.');
-          return;
+      if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+          setIsModalOpen(false);
         }
-        await window.keplr.enable("cosmoshub-4");
-        const offlineSigner = window.keplr.getOfflineSigner("cosmoshub-4");
-        const accounts = await offlineSigner.getAccounts();
-        setAccount(accounts[0].address);
-        setWalletName(name);
-        setIsModalOpen(false);
-        return;
-      }
-
-      const provider = getProvider(type);
-      if (!provider) {
-        alert(`محفظة ${name} غير مثبتة في المتصفح.`);
-        return;
-      }
-
-      const accounts = await provider.request({ method: 'eth_requestAccounts' });
-      if (accounts.length > 0) {
-        setAccount(accounts[0]);
-        setWalletName(name);
-        setIsModalOpen(false);
       }
     } catch (err) {
       console.error('خطأ في الاتصال:', err);
@@ -160,10 +176,10 @@ export default function Home() {
             onChange={(e) => handleNetworkChange(e.target.value)}
             style={styles.networkSelect}
           >
-            <option value="robinhood">🏹 Robinhood Chain</option>
-            <option value="bsc">🟡 BNB Smart Chain</option>
-            <option value="base">🔵 Base Network</option>
-            <option value="ethereum">💎 Ethereum</option>
+            <option value="robinhood">🏹 Robinhood Chain (ID: 4663)</option>
+            <option value="bsc">🟡 BNB Smart Chain (ID: 56)</option>
+            <option value="base">🔵 Base Network (ID: 8453)</option>
+            <option value="ethereum">💎 Ethereum Mainnet (ID: 1)</option>
           </select>
 
           {account ? (
@@ -203,7 +219,7 @@ export default function Home() {
             <input
               type="number"
               placeholder="0.0"
-              value={amount ? (parseFloat(amount) * 1.02).toFixed(4) : ''}
+              value={amount ? (parseFloat(amount) * 0.998).toFixed(4) : ''}
               disabled
               style={styles.inputDisabled}
             />
@@ -215,8 +231,16 @@ export default function Home() {
           </div>
         </div>
 
-        <button onClick={() => !account ? setIsModalOpen(true) : alert(`جاري تنفيذ التبادل على شبكة ${NETWORKS[selectedNetwork].chainName}`)} style={styles.swapButton}>
-          {!account ? 'Connect Wallet' : `Swap on ${NETWORKS[selectedNetwork].chainName}`}
+        {swapStatus && (
+          <p style={styles.statusText}>{swapStatus}</p>
+        )}
+
+        <button 
+          onClick={executeSwap} 
+          disabled={swapping}
+          style={swapping ? styles.swapButtonDisabled : styles.swapButton}
+        >
+          {swapping ? 'جاري المعالجة...' : !account ? 'Connect Wallet' : `Swap ${fromToken} to ${toToken}`}
         </button>
       </div>
 
@@ -224,41 +248,13 @@ export default function Home() {
         <div style={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Connect a wallet</h3>
+              <h3 style={styles.modalTitle}>Connect Wallet</h3>
               <button style={styles.closeBtn} onClick={() => setIsModalOpen(false)}>✕</button>
             </div>
 
             <div style={styles.walletList}>
-              <div style={styles.walletItem} onClick={() => connectWallet('metamask', 'MetaMask')}>
-                <div style={styles.walletInfo}>
-                  <span style={styles.walletIcon}>🦊</span>
-                  <span style={styles.walletName}>MetaMask</span>
-                </div>
-                <span style={styles.tagRecent}>Recent</span>
-              </div>
-
-              <div style={styles.walletItem} onClick={() => connectWallet('phantom', 'Phantom')}>
-                <div style={styles.walletInfo}>
-                  <span style={styles.walletIcon}>👻</span>
-                  <span style={styles.walletName}>Phantom</span>
-                </div>
-                <span style={styles.tagDetected}>Detected</span>
-              </div>
-
-              <div style={styles.walletItem} onClick={() => connectWallet('keplr', 'Keplr')}>
-                <div style={styles.walletInfo}>
-                  <span style={styles.walletIcon}>✨</span>
-                  <span style={styles.walletName}>Keplr</span>
-                </div>
-                <span style={styles.tagDetected}>Detected</span>
-              </div>
-
-              <div style={styles.walletItem} onClick={() => connectWallet('coinbase', 'Coinbase Wallet')}>
-                <div style={styles.walletInfo}>
-                  <span style={styles.walletIcon}>🔵</span>
-                  <span style={styles.walletName}>Coinbase Wallet</span>
-                </div>
-                <span style={styles.tagDetected}>Detected</span>
+              <div style={styles.walletItem} onClick={connectWallet}>
+                <span style={styles.walletName}>🦊 MetaMask / EVM Wallet</span>
               </div>
             </div>
           </div>
@@ -286,17 +282,15 @@ const styles = {
   select: { backgroundColor: '#1e2029', border: 'none', color: '#fff', padding: '8px 12px', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' },
   arrowContainer: { textAlign: 'center', margin: '12px 0', color: '#8b5cf6', fontSize: '20px' },
   swapButton: { width: '100%', backgroundColor: '#8b5cf6', color: '#fff', border: 'none', padding: '16px', borderRadius: '16px', fontSize: '16px', fontWeight: '700', marginTop: '20px', cursor: 'pointer' },
-  
+  swapButtonDisabled: { width: '100%', backgroundColor: '#4b5563', color: '#9ca3af', border: 'none', padding: '16px', borderRadius: '16px', fontSize: '16px', fontWeight: '700', marginTop: '20px', cursor: 'not-allowed' },
+  statusText: { color: '#34d399', fontSize: '13px', marginTop: '12px', textAlign: 'center' },
+
   modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
-  modalContent: { backgroundColor: '#12131a', borderRadius: '24px', border: '1px solid #1e2029', padding: '24px', width: '90%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)' },
+  modalContent: { backgroundColor: '#12131a', borderRadius: '24px', border: '1px solid #1e2029', padding: '24px', width: '90%', maxWidth: '400px' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   modalTitle: { fontSize: '18px', fontWeight: '700', margin: 0 },
   closeBtn: { backgroundColor: 'transparent', border: 'none', color: '#9ca3af', fontSize: '18px', cursor: 'pointer' },
   walletList: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  walletItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', backgroundColor: '#1a1b23', borderRadius: '16px', cursor: 'pointer', border: '1px solid transparent' },
-  walletInfo: { display: 'flex', alignItems: 'center', gap: '12px' },
-  walletIcon: { fontSize: '20px' },
-  walletName: { fontSize: '15px', fontWeight: '600', color: '#fff' },
-  tagRecent: { fontSize: '12px', color: '#ec4899', fontWeight: '600' },
-  tagDetected: { fontSize: '12px', color: '#9ca3af' }
+  walletItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', backgroundColor: '#1a1b23', borderRadius: '16px', cursor: 'pointer' },
+  walletName: { fontSize: '15px', fontWeight: '600', color: '#fff' }
 };
