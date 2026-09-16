@@ -7,6 +7,8 @@ const widgetConfig = {
   variant: 'expandable',
   subvariant: 'default',
   appearance: 'dark',
+  fee: 0, // إلغاء أي قيود عمولة إضافية قد تمنع استعراض المسارات
+  buildUrl: false,
   theme: {
     palette: {
       primary: { main: '#8b5cf6' },
@@ -23,8 +25,9 @@ const widgetConfig = {
   sdkConfig: {
     apiKey: '3b7131cd-d41d-4c0c-ad06-d47f9ffecb40.1a3ecb84-82d0-4076-bab6-4440f9850dd8',
     defaultRouteOptions: {
-      maxPriceImpact: 0.5,
+      maxPriceImpact: 0.8, // رفع السقف لـ 80% لضمان إرجاع كافة المسارات المتاحة
       allowSwitchChain: true,
+      slippage: 0.005, // 0.5% Slippage
     },
   },
 };
