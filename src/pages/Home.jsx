@@ -2,11 +2,11 @@ import React from 'react';
 import { LiFiWidget } from '@lifi/widget';
 
 const widgetConfig = {
-  integrator: 'NexusSwap',
+  integrator: 'raouf',
+  apiKey: '0f8b58ac-1cbb-45cf-a432-ae2800eb12e8',
   variant: 'expandable',
   subvariant: 'default',
   appearance: 'dark',
-  buildUrl: true,
   theme: {
     palette: {
       primary: { main: '#8b5cf6' },
@@ -21,6 +21,7 @@ const widgetConfig = {
     },
   },
   sdkConfig: {
+    apiKey: '0f8b58ac-1cbb-45cf-a432-ae2800eb12e8',
     defaultRouteOptions: {
       maxPriceImpact: 0.5,
       allowSwitchChain: true,
@@ -40,7 +41,7 @@ export default function Home() {
       </div>
 
       <div style={styles.widgetWrapper}>
-        <LiFiWidget config={widgetConfig} integrator="NexusSwap" />
+        <LiFiWidget config={widgetConfig} integrator="raouf" />
       </div>
 
       <div style={styles.features}>
