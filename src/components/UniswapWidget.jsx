@@ -20,12 +20,21 @@ const TOKENS_BY_NETWORK = {
     { symbol: 'USDC', name: 'USD Coin', address: '0xaf88d065e77c8cc2239301c5e016f010b1ad0052', decimals: 6, price: 1 },
     { symbol: 'ARB', name: 'Arbitrum', address: '0x912ce59144191c1204e64559fe8253a0e49e6548', decimals: 18, price: 0.8 }
   ],
+  10: [
+    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0x0b2c639c533813f4aa9d7837caf62653d097ff85', decimals: 6, price: 1 },
+    { symbol: 'OP', name: 'Optimism', address: '0x4200000000000000000000000000000000000042', decimals: 18, price: 1.5 }
+  ],
   8453: [
     { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6, price: 1 }
   ],
+  137: [
+    { symbol: 'POL', name: 'Polygon', address: '0x0000000000000000000000000000000000001010', decimals: 18, price: 0.5 },
+    { symbol: 'USDC', name: 'USD Coin', address: '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', decimals: 6, price: 1 }
+  ],
   4663: [
-    { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
+    { symbol: 'ETH', name: 'Robinhood ETH', address: '0x0000000000000000000000000000000000000000', decimals: 18, price: 3000 },
     { symbol: 'USDC', name: 'USD Coin', address: '0x2222222222222222222222222222222222222222', decimals: 6, price: 1 }
   ]
 };
@@ -75,6 +84,14 @@ export default function UniswapWidget() {
   useEffect(() => {
     calculateQuote();
   }, [amountIn, tokenIn, tokenOut]);
+
+  // دالة تغيير الشبكة وتحديث العملات تلقائياً مثل Uniswap
+  const handleNetworkChange = (net) => {
+    setSelectedNetwork(net);
+    const netTokens = TOKENS_BY_NETWORK[net.id] || TOKENS_BY_NETWORK[1];
+    setTokenIn(netTokens[0]); // العملة الرئيسية للشبكة (مثلاً ETH أو POL)
+    setTokenOut(netTokens[1] || netTokens[0]); // العملة الثانية المتاحة (مثلاً USDC)
+  };
 
   const handleSelectToken = (token) => {
     if (activeTarget === 'in') {
@@ -161,12 +178,7 @@ export default function UniswapWidget() {
               {NETWORKS.map(net => (
                 <button
                   key={net.id}
-                  onClick={() => {
-                    setSelectedNetwork(net);
-                    const netTokens = TOKENS_BY_NETWORK[net.id] || TOKENS_BY_NETWORK[1];
-                    if (activeTarget === 'in') setTokenIn(netTokens[0]);
-                    else setTokenOut(netTokens[1] || netTokens[0]);
-                  }}
+                  onClick={() => handleNetworkChange(net)}
                   style={{
                     ...styles.netTab,
                     borderColor: selectedNetwork.id === net.id ? '#6366f1' : '#232d3f',
