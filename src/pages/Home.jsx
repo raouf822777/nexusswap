@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
 const NETWORKS = {
-  robinhood: {
-    chainId: '0x1237',
-    chainName: 'Robinhood Chain',
+  ethereum: {
+    chainId: '0x1',
+    chainName: 'Ethereum Mainnet',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
+    rpcUrls: ['https://eth.llamarpc.com'],
     tokens: [
       { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', popular: true, coingeckoId: 'ethereum', decimals: 18 },
-      { symbol: 'USDC', name: 'USD Coin', address: '0x123700000000000000000000000000000000usdc', popular: true, coingeckoId: 'usd-coin', decimals: 6 },
-      { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x123700000000000000000000000000000000wbtc', popular: false, coingeckoId: 'wrapped-bitcoin', decimals: 8 }
+      { symbol: 'USDT', name: 'Tether USD', address: '0xdac17f958d2ee523a2206206994597c13d831ec7', popular: true, coingeckoId: 'tether', decimals: 6 },
+      { symbol: 'USDC', name: 'USD Coin', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', popular: true, coingeckoId: 'usd-coin', decimals: 6 }
     ]
   },
   bsc: {
@@ -24,15 +24,15 @@ const NETWORKS = {
       { symbol: 'CAKE', name: 'PancakeSwap', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', popular: true, coingeckoId: 'pancakeswap-token', decimals: 18 }
     ]
   },
-  ethereum: {
-    chainId: '0x1',
-    chainName: 'Ethereum Mainnet',
+  robinhood: {
+    chainId: '0x1237',
+    chainName: 'Robinhood Chain',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://eth.llamarpc.com'],
+    rpcUrls: ['https://rpc.mainnet.chain.robinhood.com'],
     tokens: [
       { symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', popular: true, coingeckoId: 'ethereum', decimals: 18 },
-      { symbol: 'USDT', name: 'Tether USD', address: '0xdac17f958d2ee523a2206206994597c13d831ec7', popular: true, coingeckoId: 'tether', decimals: 6 },
-      { symbol: 'USDC', name: 'USD Coin', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', popular: true, coingeckoId: 'usd-coin', decimals: 6 }
+      { symbol: 'USDC', name: 'USD Coin', address: '0x123700000000000000000000000000000000usdc', popular: true, coingeckoId: 'usd-coin', decimals: 6 },
+      { symbol: 'WBTC', name: 'Wrapped BTC', address: '0x123700000000000000000000000000000000wbtc', popular: false, coingeckoId: 'wrapped-bitcoin', decimals: 8 }
     ]
   }
 };
@@ -50,8 +50,6 @@ export default function Home() {
   const [amount, setAmount] = useState('');
   const [estimatedReceive, setEstimatedReceive] = useState('');
   const [balances, setBalances] = useState({});
-  const [tokenPrices, setTokenPrices] = useState({});
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   useEffect(() => {
     checkConnection();
@@ -61,7 +59,6 @@ export default function Home() {
     if (account) fetchRealBalances();
   }, [account, selectedNetwork]);
 
-  // قراءة الأرصدة الحقيقية الفعلية من البلوكشين مباشرة
   const fetchRealBalances = async () => {
     if (!window.ethereum || !account) return;
 
@@ -72,11 +69,9 @@ export default function Home() {
 
       for (const token of tokens) {
         if (token.address === '0x0000000000000000000000000000000000000000') {
-          // جلب رصيد العملة الأساسية (ETH/BNB)
           const rawBalance = await provider.getBalance(account);
           realBalances[token.symbol] = parseFloat(ethers.formatEther(rawBalance)).toFixed(4);
         } else {
-          // جلب رصيد الرموز الذكية ERC-20
           try {
             const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
             const rawBalance = await contract.balanceOf(account);
@@ -109,7 +104,7 @@ export default function Home() {
     <main style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>NexusSwap Protocol</h1>
-        <p style={styles.subtitle}>Verified On-Chain Balances</p>
+        <p style={styles.subtitle}>Verified On-Chain Balances & Native Swap</p>
       </div>
 
       <div style={styles.card}>
@@ -133,7 +128,12 @@ export default function Home() {
               🟢 {account.substring(0, 4)}...{account.substring(account.length - 4)}
             </span>
           ) : (
-            <button onClick={() => setIsWalletModalOpen(true)} style={styles.connectBtn}>
+            <button onClick={async () => {
+              if (window.ethereum) {
+                const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                if (accs.length) setAccount(accs[0]);
+              }
+            }} style={styles.connectBtn}>
               Connect
             </button>
           )}
