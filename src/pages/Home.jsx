@@ -1,10 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { LiFiWidget } from '@lifi/widget';
-import { getWidgetConfig } from '../config/widgetConfig';
+import { widgetConfig } from '../config/widgetConfig';
 
 export default function Home() {
-  const widgetConfig = useMemo(() => getWidgetConfig(), []);
-
   return (
     <main style={styles.container}>
       <div style={styles.header}>
